@@ -1,0 +1,8 @@
+npm i --dev cypress
+add 2 text to the script section in package.json
+"scripts": {
+	"cypress:open":"cypress open",
+	"cypress:run":"cypress run"
+}
+
+npm run cypress:open

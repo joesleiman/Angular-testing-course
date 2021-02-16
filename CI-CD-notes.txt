@@ -1,0 +1,61 @@
+//to get a code coverage report 
+ng test --watch=false --code-coverage 
+
+//check the coverage folder created by the Command Line above
+// in order to see our report we should install http server 
+npm install -g http-server
+cd coverage/
+//-c-1: disable all caching headers , '.' mean to serve the current content
+http-server -c-1 . // we can see the full reports and know what testing we miss or what is complete
+
+
+------------------------------------------------------------
+Prepare for Continuous Integration:
+
+cd .. // from the above directory, we should go back to the main location
+//create a production version of our application
+add in the package.json inside scripts: {
+	"build:prod": "ng build --prod"
+}
+
+// we want to run our integration tests against the actual goal that is going to run in production without any mocks
+//and using the same build process that we're going to use to deploy it in production
+
+npm run build:prod (it will take few minutes)
+// we will have a dist folder and make sure all the terminal instances are stopped and close (stop all tests, server run,..)
+//to run the application in production mode we should add in the package.json the below:
+scripts: {
+	"start:prod": "http-server ./dist -p 4200"  //this port should be the same as the one exist in cypress.json
+}
+
+npm run start:prod   //we will notice that there's no data because the back end server is off
+
+//now we want to run our cypress test against it
+//now we will use cypress:run instead of cypress:open(open a seperate user interface )
+//so cypress:run get the result in the command line directly instead of seperate user interface
+npm run cypress:run  (on a new terminal)
+
+
+//But when we deploy our tests to a continous integration server we would like to have only once commad to execute.
+//so instead of doing npm run build:prod > npm run start:prod > npm run cypress:run > we will use one command as the following:
+// make sure that the npm-run-all exist in the package.json because it provide as run-s to run multiple tasks in sequence(for windows) but Mac can run miltiple tasks without using run-s
+add in package.json file in "scripts": {
+	"build-and-deploy:prod":"run-s build:prod start:prod", 
+	// in the next line it's very important to have this npm package "start-server-and-test" 
+	//because it will wait for the server to be ready before starting the tests, 
+	//so we should wait for the start:prod to finish and the server be ready,
+	//then run the cypress test and then exit when the test is completed
+	//http://localhost:4200: is the url that the command is going to use to wait for the server to be ready
+	//so the server will be available on http://localhost:4200
+	"e2e":"start-server-and-test build-and-deploy:prod http://localhost:4200 cypress:run"
+}
+//make sure to stop all the terminals
+npm run e2e
+
+
+
+//Deploy to Continuous Integration through Travis CI:
+
+1- Go to www.travis-ci.org
+2- Connect with your github
+3- Put your project on gut hub repository
